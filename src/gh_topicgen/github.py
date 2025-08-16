@@ -28,8 +28,9 @@ class GithubConn:
         self._token = token
         self._gh: Github = Github(token)
 
-    def iter_repos(self, rx: str, ignore_case: bool = False, visibility: Visibility = "all") -> Generator[
-        Repository, None, None]:
+    def iter_repos(self, rx: str, ignore_case: bool = False, visibility: Visibility = "all") -> \
+            Generator[
+                Repository, None, None]:
         """
         Yield repositories for the authenticated user filtered by visibility.
 
@@ -47,6 +48,7 @@ class GithubConn:
                 continue
             if visibility == "private" and not repo.private:
                 continue
+
             yield repo
 
     @staticmethod
@@ -96,15 +98,36 @@ class GithubConn:
     README: <full content here>
         """
         name: str = repo.full_name
-        desc: str = repo.description
-        topics: str = ",".join(GithubConn.get_repo_topics(repo))
-        langs: str = ",".join(repo.get_languages().keys())
-        readme: str = repo.get_readme().decoded_content.decode(encoding='utf-8')
+
+        try:
+            desc: str = repo.description
+        except Exception as e:
+            desc: str = "<no description>"
+            print(f"Warning [{repo.full_name}]: could not get description.")
+
+        try:
+            topics: str = ",".join(GithubConn.get_repo_topics(repo))
+        except Exception as e:
+            topics: str = "<no topics>"
+            print(f"Warning [{repo.full_name}]: could not get topics.")
+
+        try:
+            langs: str = ",".join(repo.get_languages().keys())
+        except Exception as e:
+            lands: str = "<no programming language indexed>"
+            print(f"Warning [{repo.full_name}]: could not get readme.")
+
+        try:
+            readme: str = repo.get_readme().decoded_content.decode(encoding='utf-8')
+            readme = "\n\n" + readme
+        except Exception as e:
+            readme: str = "<no readme>"
+            print(f"Warning [{repo.full_name}]: could not get readme.")
 
         return (
             f"REPO_NAME: {name}\n"
             f"DESCRIPTION: {desc}\n"
             f"EXISTING_TOPICS: {topics}\n"
             f"LANGUAGES: {langs}\n"
-            f"README: \n\n{readme}"
+            f"README: {readme}"
         )

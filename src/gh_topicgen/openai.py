@@ -5,6 +5,8 @@
 # ai_client.py
 # NOTE: Don't name this file "openai.py" (it would shadow the real package).
 # pip install openai
+import asyncio
+import random
 import re
 from typing import Optional
 
@@ -40,23 +42,45 @@ class AIClient:
         self._client = OpenAI(api_key=token)
         self._system = system
         self._take_my_money: bool = False
-        self._model = model
+        self._model = model if not take_my_money else AIClient.TAKE_MY_MONEY_MODEL
+        print("Info: AI model is " + self._model)
 
-    def ask(self, prompt: str) -> str:
-        """Single-turn prompt → assistant reply (string). take my money is max model, max effort."""
+    async def _call_with_retry(self, **kwargs):
+        retries = 10
+        base_delay = 1
+
+        for attempt in range(retries):
+            try:
+                # offload sync call to thread
+                return await asyncio.to_thread(self._client.responses.create, **kwargs)
+            except Exception as e:
+                # Look for OpenAI rate-limit / transient error
+                if "rate limit" not in str(e).lower() and "429" not in str(e):
+                    raise
+
+                wait = base_delay * (2 ** attempt) + random.random()
+                print(f"Rate limited. Retry {attempt + 1}/{retries} in {wait:.1f}s...")
+                await asyncio.sleep(wait)
+
+        raise RuntimeError("Too many rate-limit errors, giving up")
+
+    async def ask(self, prompt: str) -> str:
+        """Single-turn prompt → assistant reply (string)."""
         if self._take_my_money:
-            return self._client.responses.create(
+            resp = await self._call_with_retry(
                 model=AIClient.TAKE_MY_MONEY_MODEL,
                 instructions=self._system,
                 input=prompt,
-                reasoning={"effort": "high"}
-            ).output_text.strip()
+                reasoning={"effort": "high"},
+            )
+        else:
+            resp = await self._call_with_retry(
+                model=self._model,
+                instructions=self._system,
+                input=prompt,
+            )
 
-        return self._client.responses.create(
-            model=self._model,
-            instructions=self._system,
-            input=prompt
-        ).output_text.strip()
+        return resp.output_text.strip()
 
     @staticmethod
     def normalize_part(part: str) -> Optional[str]:
@@ -95,15 +119,16 @@ class AIClient:
 
         return s
 
-    def generate_topics(self, repo_info: str) -> list[str]:
+    async def generate_topics(self, repo_info: str) -> list[str]:
         """
         Tries to generate the new topics.
         :param repo_info: Repository information like explained in the system_prompt.txt
         :return: A list of topics, not empty hopefully...
         """
-        resp: str = self.ask(repo_info)
+
+        resp: str = await self.ask(repo_info)
         if resp == AIClient._SENTINEL_INVALID:
-            return list()
+            return []
 
         parts: list[str] = list(dict.fromkeys(resp.split(',')))
         return [self.normalize_part(t) for t in parts]
