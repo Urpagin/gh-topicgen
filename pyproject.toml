@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "github-ai-topics"
+version = "0.1.0"
+description = "Tools to list/modify GitHub repo topics"
+readme = "README.md"
+license = { file = "LICENSE.md" }
+requires-python = ">=3.9"
+dependencies = ["PyGithub>=2.3", "python-dotenv", "openai"]
+
+# CLI: `ghretag` runs gh_topicgen.cli:main
+[project.scripts]
+ghretag = "gh_topicgen.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# If you ship runtime data inside the package:
+[tool.setuptools.package-data]
+github_ai_topics = ["data/**/*.json", "templates/*.j2"]
