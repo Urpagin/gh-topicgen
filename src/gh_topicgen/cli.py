@@ -22,7 +22,9 @@ def main(argv=None) -> int:
     gh: GithubConn = GithubConn(cfg.gh_token)
     for repo in gh.iter_repos(rx=cfg.regex, ignore_case=cfg.ignore_case, visibility=cfg.visibility):
         new_topics: list[str] = generate_topics(repo, ai)
-        print(f"New topics for {repo.full_name}: {new_topics}")
+        print(f"[]New topics for {repo.full_name}: {new_topics}")
+        repo.replace_topics(new_topics)
+        print(f"#")
         break
 
     return 0
@@ -44,4 +46,4 @@ def generate_topics(repo: Repository, ai: AIClient) -> list[str]:
         *ai_topics
     ]))
 
-    return topics
+    return topics[:20]
