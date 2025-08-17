@@ -25,6 +25,7 @@ class Config:
         self._prompt_file: Path = args.prompt
         self.system_prompt: str = self._load_system_prompt()
         self.model: str = args.model
+        self.take_my_money: bool = args.take_my_money
 
         self.gh_token: Union[str, None] = gh
         self.openai_token: Union[str, None] = oai
@@ -133,8 +134,14 @@ class Config:
             action="store_true",
             help="Do not prompt; fail if tokens are missing",
         )
+        p.add_argument(
+            "--take-my-money",
+            action="store_true",
+            help="Special model spec: GPT-5 Thinking with high effort. If set, any --model value is ignored.",
+        )
 
-        p.add_argument("--visibility", "-v", choices=["public", "private", "all"], nargs=1, required=True)
+        p.add_argument("--visibility", "-v", choices=["public", "private", "all"], nargs=1, required=True,
+                       help="What type of repositories to use.")
 
         # then parse.
         return p.parse_args(argv)

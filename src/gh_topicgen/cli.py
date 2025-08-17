@@ -12,10 +12,13 @@ from github.Repository import Repository
 CONCURRENT_WORKERS: int = 10
 
 
-async def main(argv=None) -> int:
+def main(argv=None) -> int:
+    return asyncio.run(_async_main(argv))
+
+
+async def _async_main(argv=None) -> int:
     # Load CLI and env vars.
     cfg: Config = Config(argv)
-    print(cfg)
 
     # Max N number of running workers.
     # Each worker calls an OpenAI model response and PUTs to GitHub for the topics.
@@ -23,11 +26,11 @@ async def main(argv=None) -> int:
     sem = asyncio.Semaphore(CONCURRENT_WORKERS)
     print(f"Beginning with a max of {CONCURRENT_WORKERS} concurrent workers.")
 
-    ai: AIClient = AIClient(token=cfg.openai_token, system=cfg.system_prompt, model=cfg.model, take_my_money=True)
+    ai: AIClient = AIClient(token=cfg.openai_token, system=cfg.system_prompt, model=cfg.model,
+                            take_my_money=cfg.take_my_money)
     gh: GithubConn = GithubConn(cfg.gh_token)
 
     ai_worker_tasks = []
-    gh_fetcher_tasks = []
     count: int = 1
     for repo in gh.iter_repos(rx=cfg.regex, ignore_case=cfg.ignore_case, visibility=cfg.visibility):
         print(f"[#{count}] [{repo.full_name}] Fetching...")

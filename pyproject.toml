@@ -14,6 +14,7 @@ dependencies = ["PyGithub>=2.3", "python-dotenv", "openai"]
 # CLI: `ghretag` runs gh_topicgen.cli:main
 [project.scripts]
 ghtopicgen = "gh_topicgen.cli:main"
+gh-topicgen = "gh_topicgen.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
