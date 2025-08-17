@@ -48,13 +48,13 @@ class Config:
     def _load_env(self):
         """Tries to load via environment variables."""
         # Load environment variables
-        gh: Optional[str] = os.getenv("GH_TOKEN").strip()
-        oai: Optional[str] = os.getenv("OPENAI_TOKEN").strip()
+        gh: Optional[str] = os.getenv("GH_TOKEN")
+        oai: Optional[str] = os.getenv("OPENAI_TOKEN")
 
         if not self.gh_token and gh:
-            self.gh_token = gh
+            self.gh_token = gh.strip()
         if not self.openai_token and oai:
-            self.openai_token = oai
+            self.openai_token = oai.strip()
 
         if not (self.gh_token and self.openai_token):
             print("Warning: failed to load config via environment variables; reading from user input.")
@@ -73,6 +73,10 @@ class Config:
     def _load_system_prompt(self) -> str:
         """Read the system prompt text. Prefer project root, then CWD, then <root>/src."""
         p = self._prompt_file  # Path from args; default "system_prompt.txt"
+        if not p.exists():
+            print("Please make the system_prompt.txt file and fill it with instructions for the bot."
+                  "Or take the one on the GitHub repo (better) than doing it over the top of your head.")
+            exit(1)
 
         if p.is_absolute():
             if not p.is_file():
